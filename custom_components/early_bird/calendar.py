@@ -1,4 +1,5 @@
 """Calendar platform for the Early Bird parcel tracker integration."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -20,17 +21,20 @@ PARALLEL_UPDATES = 0
 _DEFAULT_EVENT_DURATION = timedelta(hours=1)
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EarlyBirdConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Early Bird deliveries calendar from a config entry."""
-    async_add_entities([EarlyBirdDeliveriesCalendar(entry.runtime_data.coordinator, entry)])
+    async_add_entities(
+        [EarlyBirdDeliveriesCalendar(entry.runtime_data.coordinator, entry)]
+    )
 
 
-class EarlyBirdDeliveriesCalendar(CoordinatorEntity[EarlyBirdCoordinator], CalendarEntity):
+class EarlyBirdDeliveriesCalendar(
+    CoordinatorEntity[EarlyBirdCoordinator], CalendarEntity
+):
     """A read-only calendar of expected Early Bird deliveries.
 
     Each active tracked parcel with a known delivery moment becomes an event.
@@ -60,7 +64,9 @@ class EarlyBirdDeliveriesCalendar(CoordinatorEntity[EarlyBirdCoordinator], Calen
 
             barcode = parcel.get("barcode") or ""
             sender = parcel.get("sender")
-            summary = sender or (f"Parcel {barcode}" if barcode else "Early Bird parcel")
+            summary = sender or (
+                f"Parcel {barcode}" if barcode else "Early Bird parcel"
+            )
             description_parts = [
                 f"Barcode: {barcode}" if barcode else None,
                 f"Status: {parcel.get('status')}" if parcel.get("status") else None,

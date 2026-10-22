@@ -1,14 +1,12 @@
 """Tests for the Early Bird API client."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
 import pytest
 
-from custom_components.early_bird.api import (
-    EarlyBirdApiClient,
-    EarlyBirdApiError,
-)
+from custom_components.early_bird.api import EarlyBirdApiClient, EarlyBirdApiError
 
 from .payloads import EXTERNAL_LINK, LEGACY_DELIVERED
 
@@ -77,7 +75,14 @@ async def test_get_parcel_raises_on_server_error():
     assert err.value.status_code == 500
 
 
-@pytest.mark.parametrize("headers,expected", [({"Retry-After": "30"}, 30.0), ({}, None), ({"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}, None)])
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        ({"Retry-After": "30"}, 30.0),
+        ({}, None),
+        ({"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}, None),
+    ],
+)
 async def test_get_parcel_429_carries_retry_after(headers, expected):
     client = EarlyBirdApiClient(_session_returning(429, None, headers))
     with pytest.raises(EarlyBirdApiError) as err:

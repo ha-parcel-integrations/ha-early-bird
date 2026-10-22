@@ -1,4 +1,5 @@
 """Early Bird public tracking API client."""
+
 from __future__ import annotations
 
 import logging
@@ -96,7 +97,5 @@ class EarlyBirdApiClient:
             raise EarlyBirdApiError(f"HTTP {status}", status_code=status)
 
         if payload.get("type") not in (_TIMELINE, _EXTERNAL_LINK):
-            raise EarlyBirdApiError(
-                "unexpected reply type", status_code=status
-            )
+            raise EarlyBirdApiError("unexpected reply type", status_code=status)
         return payload

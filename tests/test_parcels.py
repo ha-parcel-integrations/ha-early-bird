@@ -4,8 +4,9 @@ These need no Home Assistant instance — the whole point of keeping
 ``parcels.py`` free of I/O is that the carrier-specific mapping can be tested
 as plain functions.
 """
+
+from datetime import UTC, datetime, timedelta
 import logging
-from datetime import datetime, timedelta, timezone
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -55,7 +56,9 @@ def _reset_one_shot_warnings():
 
 def _status(*texts: str) -> ParcelStatus:
     """Status of a timeline whose events are given newest first."""
-    events = [event(text, f"2026-09-0{9 - i}T10:00:00Z") for i, text in enumerate(texts)]
+    events = [
+        event(text, f"2026-09-0{9 - i}T10:00:00Z") for i, text in enumerate(texts)
+    ]
     return normalize_parcel(timeline(*events))["status"]
 
 
@@ -65,33 +68,72 @@ def _status(*texts: str) -> ParcelStatus:
 
 
 @pytest.mark.parametrize(
-    "text,expected",
+    ("text", "expected"),
     [
         ("Your delivery is booked with Early Bird.", ParcelStatus.REGISTERED),
         ("Din leverans är bokad med Early Bird.", ParcelStatus.REGISTERED),
-        ("Leveransen till dig är bokad av e-handlaren. Mer text.", ParcelStatus.REGISTERED),
+        (
+            "Leveransen till dig är bokad av e-handlaren. Mer text.",
+            ParcelStatus.REGISTERED,
+        ),
         ("Early Bird has received your package.", ParcelStatus.IN_TRANSIT),
         ("Early Bird har tagit emot ditt paket.", ParcelStatus.IN_TRANSIT),
         ("Your package has arrived at the terminal in Malmö.", ParcelStatus.IN_TRANSIT),
         ("Ditt paket har kommit till terminalen i Malmö.", ParcelStatus.IN_TRANSIT),
-        ("Paketet har ankommit till sorteringsterminal Sundsvall", ParcelStatus.IN_TRANSIT),
-        ("Your package is on its way. You will receive a notification.", ParcelStatus.IN_TRANSIT),
+        (
+            "Paketet har ankommit till sorteringsterminal Sundsvall",
+            ParcelStatus.IN_TRANSIT,
+        ),
+        (
+            "Your package is on its way. You will receive a notification.",
+            ParcelStatus.IN_TRANSIT,
+        ),
         ("Paketet är på väg. Du får ett meddelande.", ParcelStatus.IN_TRANSIT),
         ("We failed to deliver your package as planned. x", ParcelStatus.PROBLEM),
-        ("Vi misslyckades med att leverera ditt paket som planerat.", ParcelStatus.PROBLEM),
-        ("We were unable to access the entrance and therefore failed.", ParcelStatus.PROBLEM),
-        ("Vi kunde inte komma in i porten och kunde därför inte leverera.", ParcelStatus.PROBLEM),
-        ("Since we were unable to deliver the parcel to your home, we will reroute it.", ParcelStatus.IN_TRANSIT),
-        ("Eftersom vi inte kunde leverera paketet hem till dig så bokar vi om.", ParcelStatus.IN_TRANSIT),
-        ("Your package is now ready for collection from the parcel locker. App.", ParcelStatus.AT_PICKUP_POINT),
-        ("Ditt paket finns nu redo att hämtas från paketskåpet.", ParcelStatus.AT_PICKUP_POINT),
-        ("The package has been collected from the parcel locker.", ParcelStatus.DELIVERED),
+        (
+            "Vi misslyckades med att leverera ditt paket som planerat.",
+            ParcelStatus.PROBLEM,
+        ),
+        (
+            "We were unable to access the entrance and therefore failed.",
+            ParcelStatus.PROBLEM,
+        ),
+        (
+            "Vi kunde inte komma in i porten och kunde därför inte leverera.",
+            ParcelStatus.PROBLEM,
+        ),
+        (
+            "Since we were unable to deliver the parcel to your home, we will reroute it.",
+            ParcelStatus.IN_TRANSIT,
+        ),
+        (
+            "Eftersom vi inte kunde leverera paketet hem till dig så bokar vi om.",
+            ParcelStatus.IN_TRANSIT,
+        ),
+        (
+            "Your package is now ready for collection from the parcel locker. App.",
+            ParcelStatus.AT_PICKUP_POINT,
+        ),
+        (
+            "Ditt paket finns nu redo att hämtas från paketskåpet.",
+            ParcelStatus.AT_PICKUP_POINT,
+        ),
+        (
+            "The package has been collected from the parcel locker.",
+            ParcelStatus.DELIVERED,
+        ),
         ("Paketet har hämtats ur paketskåpet.", ParcelStatus.DELIVERED),
         ("The package has been delivered to your door.", ParcelStatus.DELIVERED),
         ("The package has been delivered to your mailbox.", ParcelStatus.DELIVERED),
-        ("The package has been delivered in a bag on your mailbox.", ParcelStatus.DELIVERED),
+        (
+            "The package has been delivered in a bag on your mailbox.",
+            ParcelStatus.DELIVERED,
+        ),
         ("Ditt paket har nu levererats av Early Bird. Mer.", ParcelStatus.DELIVERED),
-        ("  YOUR   package is ON its way.  You will receive a NOTIFICATION  ", ParcelStatus.IN_TRANSIT),
+        (
+            "  YOUR   package is ON its way.  You will receive a NOTIFICATION  ",
+            ParcelStatus.IN_TRANSIT,
+        ),
     ],
 )
 def test_known_wording_maps(text, expected):
@@ -127,7 +169,10 @@ def test_new_attempt_alone_is_unknown_without_warning(caplog):
 
 def test_unknown_newest_wording_falls_back_to_history_and_warns_once(caplog):
     caplog.set_level(logging.WARNING)
-    texts = ("Your package is out for delivery today.", "Early Bird has received your package.")
+    texts = (
+        "Your package is out for delivery today.",
+        "Early Bird has received your package.",
+    )
     assert _status(*texts) == ParcelStatus.IN_TRANSIT
     assert _status(*texts) == ParcelStatus.IN_TRANSIT
     assert caplog.text.count("out for delivery today") == 1
@@ -136,7 +181,9 @@ def test_unknown_newest_wording_falls_back_to_history_and_warns_once(caplog):
 
 def test_unknown_wording_only_is_unknown_and_warns(caplog):
     caplog.set_level(logging.WARNING)
-    assert _status("The package is being returned to the sender.") == ParcelStatus.UNKNOWN
+    assert (
+        _status("The package is being returned to the sender.") == ParcelStatus.UNKNOWN
+    )
     assert "being returned to the sender" in caplog.text
 
 
@@ -151,7 +198,10 @@ def test_map_event_status_distinguishes_no_mapping():
     assert map_event_status(None) is None
     assert map_event_status("We have scheduled a new attempt") is None
     assert map_event_status("Something new") is None
-    assert map_event_status("Paketet är på väg. Du får ett meddelande.") == ParcelStatus.IN_TRANSIT
+    assert (
+        map_event_status("Paketet är på väg. Du får ett meddelande.")
+        == ParcelStatus.IN_TRANSIT
+    )
 
 
 def test_empty_warning_text_is_not_logged(caplog):
@@ -173,8 +223,12 @@ def test_parse_occurred_handles_utc_offset_and_local():
         "2026-09-11T13:01:43+00:00"
     )
     # No offset: Stockholm wall clock (CET in November, CEST in August).
-    assert parse_occurred("2024-11-15T01:40:24").isoformat() == "2024-11-15T00:40:24+00:00"
-    assert parse_occurred("2026-08-15T12:00:00").isoformat() == "2026-08-15T10:00:00+00:00"
+    assert (
+        parse_occurred("2024-11-15T01:40:24").isoformat() == "2024-11-15T00:40:24+00:00"
+    )
+    assert (
+        parse_occurred("2026-08-15T12:00:00").isoformat() == "2026-08-15T10:00:00+00:00"
+    )
     assert parse_occurred("garbage") is None
     assert parse_occurred(None) is None
     assert parse_occurred("") is None
@@ -182,7 +236,7 @@ def test_parse_occurred_handles_utc_offset_and_local():
 
 def test_parse_iso_handles_z_naive_and_garbage():
     assert parse_iso("2026-04-29T13:12:42Z").tzinfo is not None
-    assert parse_iso("2026-04-29T13:12:42").tzinfo == timezone.utc
+    assert parse_iso("2026-04-29T13:12:42").tzinfo == UTC
     assert parse_iso("not-a-date") is None
     assert parse_iso(None) is None
 
@@ -221,7 +275,12 @@ def test_build_history_orders_oldest_to_newest():
 
 
 def test_build_history_caps_to_max_events():
-    events = [event("Paketet är på väg. Du får ett meddelande.", f"2026-09-{day:02d}T10:00:00Z") for day in range(25, 0, -1)]
+    events = [
+        event(
+            "Paketet är på väg. Du får ett meddelande.", f"2026-09-{day:02d}T10:00:00Z"
+        )
+        for day in range(25, 0, -1)
+    ]
     history = build_history(events, max_events=20)
     assert len(history) == 20
     assert history[-1]["timestamp"].startswith("2026-09-25")
@@ -231,7 +290,10 @@ def test_build_history_handles_missing_and_malformed():
     assert build_history(None) == []
     assert build_history([{"text": "Paketet är på väg. Du får ett meddelande."}]) == []
     assert build_history(["not-a-dict"]) == []
-    assert build_history([event("Paketet är på väg. Du får ett meddelande.", "nonsense")]) == []
+    assert (
+        build_history([event("Paketet är på väg. Du får ett meddelande.", "nonsense")])
+        == []
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -307,23 +369,31 @@ def test_normalize_locker_fixture_delivered():
     assert parcel["status"] == ParcelStatus.DELIVERED
     assert parcel["delivered"] is True
     assert parcel["delivered_at"] == "2026-09-11T13:01:43.811000+00:00"
-    assert parcel["raw_status"] == "The package has been collected from the parcel locker."
+    assert (
+        parcel["raw_status"] == "The package has been collected from the parcel locker."
+    )
     assert parcel["pickup"] is True
     assert parcel["pickup_point"] is None
     assert parcel["planned_from"] is None and parcel["planned_to"] is None
     assert parcel["weight"] is None and parcel["dimensions"] is None
     assert parcel["sender"] is None and parcel["receiver"] is None
-    assert parcel["url"] == "https://earlybird.se/spara-och-hjalp?id=00373402216888888888"
+    assert (
+        parcel["url"] == "https://earlybird.se/spara-och-hjalp?id=00373402216888888888"
+    )
     assert parcel["raw"]["requestId"] == "req-REDACTED"
     assert len(parcel["history"]) == 14
 
 
 def test_normalize_legacy_fixture_localises_offsetless_clock():
-    parcel = normalize_parcel({**LEGACY_DELIVERED, "trackingNumber": "X"}, include_history=True)
+    parcel = normalize_parcel(
+        {**LEGACY_DELIVERED, "trackingNumber": "X"}, include_history=True
+    )
     assert parcel["status"] == ParcelStatus.DELIVERED
     assert parcel["delivered_at"] == "2024-11-15T00:40:24+00:00"
     assert parcel["history"][0]["status"] == ParcelStatus.REGISTERED
-    assert [h["status"] for h in parcel["history"][1:3]] == [ParcelStatus.IN_TRANSIT] * 2
+    assert [h["status"] for h in parcel["history"][1:3]] == [
+        ParcelStatus.IN_TRANSIT
+    ] * 2
 
 
 def test_normalize_history_is_opt_in():
@@ -360,19 +430,27 @@ def test_normalize_without_tracking_code_has_no_url():
 
 def test_normalize_uses_status_block_when_events_are_missing():
     parcel = normalize_parcel(
-        {"type": "timeline", "status": event("Paketet är på väg. Du får ett meddelande.", T), "events": []}
+        {
+            "type": "timeline",
+            "status": event("Paketet är på väg. Du får ett meddelande.", T),
+            "events": [],
+        }
     )
     assert parcel["status"] == ParcelStatus.IN_TRANSIT
     assert parcel["raw_status"] == "Paketet är på väg. Du får ett meddelande."
 
 
 def test_normalize_raw_status_falls_back_to_newest_event():
-    parcel = normalize_parcel({"events": [event("Paketet är på väg. Du får ett meddelande.", T)]})
+    parcel = normalize_parcel(
+        {"events": [event("Paketet är på väg. Du får ett meddelande.", T)]}
+    )
     assert parcel["raw_status"] == "Paketet är på väg. Du får ett meddelande."
 
 
 def test_delivered_with_unparseable_stamp_has_no_delivered_at():
-    parcel = normalize_parcel(timeline(event("Paketet har hämtats ur paketskåpet.", "nonsense")))
+    parcel = normalize_parcel(
+        timeline(event("Paketet har hämtats ur paketskåpet.", "nonsense"))
+    )
     assert parcel["delivered"] is True and parcel["delivered_at"] is None
 
 
@@ -393,8 +471,6 @@ def test_external_link_without_action_dict_still_warns(caplog):
     caplog.set_level(logging.WARNING)
     normalize_parcel({"type": "external_link"})
     assert "action_keys=None" in caplog.text
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -442,7 +518,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},
@@ -502,7 +578,10 @@ def test_home_delivery_is_not_a_pickup():
                 "type": "timeline",
                 "events": [
                     {"text": wording, "occurredAt": "2026-09-12T00:21:15Z"},
-                    {"text": "Your package is on its way. You will receive a notification.", "occurredAt": "2026-09-11T14:29:46Z"},
+                    {
+                        "text": "Your package is on its way. You will receive a notification.",
+                        "occurredAt": "2026-09-11T14:29:46Z",
+                    },
                 ],
                 "trackingNumber": "X",
             }

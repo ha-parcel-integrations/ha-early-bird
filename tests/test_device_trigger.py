@@ -1,4 +1,5 @@
 """Tests for Early Bird device triggers."""
+
 from unittest.mock import AsyncMock
 
 from custom_components.early_bird.const import DOMAIN

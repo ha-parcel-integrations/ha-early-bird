@@ -3,6 +3,7 @@
 The two fixture-backed replies are scrubbed copies of live responses; the
 rest are built from the same shape.
 """
+
 from __future__ import annotations
 
 import copy

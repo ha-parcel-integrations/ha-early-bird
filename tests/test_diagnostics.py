@@ -1,10 +1,12 @@
 """Tests for Early Bird diagnostics."""
+
 from datetime import timedelta
 from unittest.mock import MagicMock
 
-from custom_components.early_bird.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.early_bird.diagnostics import async_get_config_entry_diagnostics
+from custom_components.early_bird.parcels import normalize_parcel
+
+from .payloads import EXTERNAL_LINK, LOCKER_TIMELINE
 
 
 async def test_diagnostics_redacts_and_counts(hass):
@@ -71,10 +73,6 @@ async def test_diagnostics_reports_suspended_polling(hass):
 
 async def test_diagnostics_redacts_wording_request_id_and_action(hass):
     """Terminal and route names live in the wording, so every text goes."""
-    from custom_components.early_bird.parcels import normalize_parcel
-
-    from .payloads import EXTERNAL_LINK, LOCKER_TIMELINE
-
     entry = MagicMock()
     entry.options = {"parcels": []}
     entry.runtime_data.coordinator.current_tier_minutes = 45
@@ -91,7 +89,14 @@ async def test_diagnostics_redacts_wording_request_id_and_action(hass):
     result = await async_get_config_entry_diagnostics(hass, entry)
     dumped = str(result)
 
-    for leaked in ("Stockholm", "Norsborg", "Route 000", "req-REDACTED", "partner.example", "00373402216"):
+    for leaked in (
+        "Stockholm",
+        "Norsborg",
+        "Route 000",
+        "req-REDACTED",
+        "partner.example",
+        "00373402216",
+    ):
         assert leaked not in dumped
     assert result["incoming"][0]["status"] == "delivered"
     assert result["incoming"][0]["history"][0]["raw_status"] == "**REDACTED**"
