@@ -60,7 +60,7 @@ A custom Home Assistant integration that tracks your [Early Bird](https://earlyb
 
 Or click the button below to open it directly in HACS:
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-parcel-integrations&repository=ha-early-bird&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-parcel-integrations&repository=ha-early-bird&category=integration)
 
 ### Manual
 
@@ -68,7 +68,7 @@ Copy `custom_components/early_bird` into your `config/custom_components/` folder
 
 ## Configuration
 
-[![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=early_bird)
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=early_bird)
 
 Or set it up by hand: add the integration via **Settings → Devices & Services → Add Integration → Early Bird**. There is nothing to fill in: the hub is created immediately (Early Bird tracking needs no account).
 
