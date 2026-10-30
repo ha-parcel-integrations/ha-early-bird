@@ -121,6 +121,7 @@ Standard HA removal applies: **Settings → Devices & Services → Early Bird �
 | `sensor.early_bird_en_route_to_pickup_point` | Parcels being rerouted to a parcel locker, not there yet |
 | `sensor.early_bird_awaiting_pickup` | Parcels ready to collect from a parcel locker |
 | `sensor.early_bird_delivered_parcels` | Recently delivered parcels (see the retention option) |
+| `calendar.early_bird_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.early_bird_last_successful_update` | Diagnostic: when Early Bird was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
