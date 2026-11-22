@@ -7,8 +7,8 @@ Distributed via HACS; not part of HA core. One carrier in the
 notes* is suite-wide; when in doubt check the template or a sibling repo.
 No DTO layer.
 
-API mechanics — endpoints, parameters, status vocabularies — live in the
-private `carrier-research/early-bird/api/` and are **never** copied here.
+API mechanics (endpoints, parameters, status vocabularies) are not
+documented in this repo; the code and tests are the reference.
 
 ## Shared conventions — fetch when relevant
 
@@ -35,10 +35,11 @@ you act in one of these areas:
   summary+diagnostic sensors. Add a new non-parcel sensor's unique_id to the set.
 - **Per-parcel sensors are removed by the summary sensor** via
   `entity_registry.async_remove` (self-removal races and leaves ghosts).
-- **The optional pickup-point summaries are a pair.** A carrier that can tell
-  a parcel is destined for a pickup point exposes
-  `en_route_to_pickup_point` for `pickup is true` before it arrives; one that
-  can reach `ParcelStatus.AT_PICKUP_POINT` also exposes `awaiting_pickup`.
+- **The pickup-point summaries are a pair.** A carrier that can deliver to a
+  pickup point or locker exposes both `en_route_to_pickup_point` and
+  `awaiting_pickup`, even before a real parcel has shown the status or flag
+  (they read 0 until then; record it in `PENDING_*`). A carrier without pickup
+  points exposes neither and keeps `pickup` constantly False.
   See *Parcel contract* in `CONVENTIONS.md`. Say "pickup point", not
   "ServicePoint"/"parcel shop"/"locker", for the generic concept; the
   example carrier demonstrates both canonical sensors.
@@ -76,7 +77,7 @@ you act in one of these areas:
 - **History:** events reversed to oldest to newest, capped at 20, each carrying
   its wording as `raw_status`.
 - **`None` on purpose:** sender, receiver, `planned_from`/`planned_to`,
-  weight, dimensions and `pickup_point` (the locker is never named, though `pickup` is true from the reroute-to-locker announcement on, which is what feeds `en_route_to_pickup_point`; a reroute is `in_transit`, not `problem`). So
+  weight, dimensions and `pickup_point` (the locker is never named, though `pickup` is true from the reroute-to-locker announcement on, which is what feeds `en_route_to_pickup_point`; a reroute is `in_transit`, not `problem`). Known limitation: the locker keywords (`parcel locker`, `paketskåp`) in `_is_pickup` match anywhere in an event's tail sentence, so a home-delivery event that merely mentions a locker can set pickup True for good; it stays until real wording settles it. So
   `CAPABILITIES` is `url` and `history` only, and the polling never reaches
   the hot tier (no out-for-delivery, no window): it stays on the normal
   cadence until delivery.
@@ -117,13 +118,11 @@ tracked code, so a rejected key is never treated as one parcel's problem).
 `credentials` is the only one that changes the *tracking* model too (an
 account feed, not user-entered codes) — see the split above.
 
-Reach for `byo-key` only when carrier-research has already established that
-the carrier's *unauthenticated/consumer* surface is unusable (bot-walled,
+Reach for `byo-key` only when it is established that the carrier's *unauthenticated/consumer* surface is unusable (bot-walled,
 requires a session a script can't hold) and that the *official* developer key
-is reachable by a private individual — `key_access: consumer` in the research
-doc's front matter, not `business`. A `business`-gated key is a wall, not a
-BYO key, whatever the portal's own copy claims (see
-`carrier-research/CLAUDE.md`'s "Standing rulings").
+is reachable by a private individual, not gated to business accounts. A
+`business`-gated key is a wall, not a BYO key, whatever the portal's own copy
+claims.
 
 ## Incoming and outgoing parcels
 
@@ -253,5 +252,4 @@ python -m pytest tests/ --cov=custom_components.early_bird
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file + `docs/` in the same
-commit; the API reference lives in your own private research notes, never in
-this repo.
+commit.
